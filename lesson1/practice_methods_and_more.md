@@ -35,3 +35,23 @@ end
 With a block given, calls the block with each element and returns the number of elements for which the block returns a truthy value
 ```
 ---
+
+3.What is the return value of reject in the following code? Why?
+
+```ruby
+[1, 2, 3].reject do |num|
+  puts num
+end
+```
+
+---
+
+`reject` returns a new array of objects rejected by the block, so it is like the opposite of `select` in that it selects it's elements based on the block returning a falsy value. In this case, it will return:
+
+```
+[1, 2, 3]
+```
+
+This is because the `puts` method returns `nil` which is falsy.
+
+---
