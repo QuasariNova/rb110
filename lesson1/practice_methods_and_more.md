@@ -55,3 +55,28 @@ end
 This is because the `puts` method returns `nil` which is falsy.
 
 ---
+
+4.What is the return value of `each_with_object` in the following code? Why?
+
+```ruby
+['ant', 'bear', 'cat'].each_with_object({}) do |value, hash|
+  hash[value[0]] = value
+end
+```
+
+---
+
+It will return:
+```
+{
+  'a' => 'ant',
+  'b' => 'bear',
+  'c' => 'cat'
+}
+```
+
+`each_with_object` takes an object reference as an argument, which we pass an empty hash in this case. `each_with_object` will then use this object as it's return value and will pass it to the block as an argument ever iteration.
+
+In this case, we are using the first character of each string in the array as a key to store the element as a value in the hash we call `hash`. Once `each_with_object` full iterates over the collection, it returns the hash that we have been referring to as `hash` inside the block.
+
+---
