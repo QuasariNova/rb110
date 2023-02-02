@@ -80,3 +80,15 @@ It will return:
 In this case, we are using the first character of each string in the array as a key to store the element as a value in the hash we call `hash`. Once `each_with_object` full iterates over the collection, it returns the hash that we have been referring to as `hash` inside the block.
 
 ---
+
+5.What does shift do in the following code? How can we find out?
+
+```ruby
+hash = { a: 'ant', b: 'bear' }
+hash.shift
+```
+
+---
+`shift` in this context will permanently remove the first key value pair from the hash and return that key value pair as a 2 element array. I found that [here](https://docs.ruby-lang.org/en/master/Hash.html#method-i-shift)
+
+---
