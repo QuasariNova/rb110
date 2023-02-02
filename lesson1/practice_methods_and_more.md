@@ -112,3 +112,26 @@ This is because we are chaining methods. First, the `pop` method is invoked, whi
 We then invoke the method `size` on the return value from calling `pop`. Since it's the string `'caterpillar'`, it returns how many characters this string has, which is `11`, therefore it returns `11`.
 
 ---
+
+7.What is the block's return value in the following code? How is it determined? Also, what is the return value of any? in this code and what does it output?
+
+```ruby
+[1, 2, 3].any? do |num|
+  puts num
+  num.odd?
+end
+```
+
+---
+
+Overall this code will return `true`. This is because the `any?` method iterates over a collection and passes the element to a block and takes note of the return value. If any of the elements when passed to the block evaluate as true(is truthy), then `any?` returns `true`.
+
+In this case, the last expression in the block is `nom.odd?`, where `num` is the parameter that was passed the element as an argument. Since both `1` and `3` are elements and are odd, we know that this block will evaluate as `true` at least once.
+
+This code ouptuts:
+
+```
+1
+```
+
+This is because the first element is odd, therefore `any?` does not need to further iterate because it already knows it will return `true`. It's programmed like an `||`.
