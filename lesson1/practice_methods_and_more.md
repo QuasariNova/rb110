@@ -170,3 +170,34 @@ end
 `map` is defined in `Enumerable`, which `Hash` uses. `map` creates a new array, iterates over a collection passing each element as an argument to a provided block each iteration, and adds blocks the return value to the new array, which it returns when it has finished iterating.
 
 In this case, it will return the value of the key value pair, which was passed as an argument into the parameter `value`, only if the `size` method invoked on it returns a value larger than `3`. If it does not, it will return `nil`. This is because the `if` statement itself will return `nil`. Therefore, `map` will return `[nil, 'bear']`.
+
+---
+
+10.What is the return value of the following code? Why?
+
+```ruby
+[1, 2, 3].map do |num|
+  if num > 1
+    puts num
+  else
+    num
+  end
+end
+```
+
+---
+
+I explained `map` in the last example. In this case, let's take the iterations step by step to understand what each iterations block returns and how we get the answer.
+
+The first element `map` will iterate over is `1`. `1` is passed as an argument to the block and the parameter `num` is assigned to it. On line 180, we use an `if` conditional to check if `num` is greater than `1`, it is not since it is `1`, so we do not execute the xpression on line 181, instead going to the elese on 182 and running the expression on 183, which is `num`. Therefore the first element passed to the block causes it to return `1`.
+
+The second element `map` will iterate over is `2`. `num` is assigned to `2`. `2` is greater than `1`, so we execute the expression on line 181, invokings the `puts` method passing `num`s object reference as an argument. This outputs `2` and returns `nil`. This will be the last expression evaluated in the block, thus the block returns `nil`.
+
+Finally, the third element is `3`. Like `2` it's greater than `1`, so it's output and the block returns `nil`.
+
+`map` is done iterating and returns the array `[1, nil, nil]` and while it was iterating output:
+
+```
+2
+3
+```
