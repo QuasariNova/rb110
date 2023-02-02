@@ -152,3 +152,21 @@ Returns a new Array containing the first n element of self, where n is a non-neg
 ```
 
 So in this case, `take` will return `[1, 2]` and `arr` will still be `[1, 2, 3, 4, 5]` because `take` is not destructive.
+
+---
+
+9.What is the return value of map in the following code? Why?
+
+```ruby
+{ a: 'ant', b: 'bear' }.map do |key, value|
+  if value.size > 3
+    value
+  end
+end
+```
+
+---
+
+`map` is defined in `Enumerable`, which `Hash` uses. `map` creates a new array, iterates over a collection passing each element as an argument to a provided block each iteration, and adds blocks the return value to the new array, which it returns when it has finished iterating.
+
+In this case, it will return the value of the key value pair, which was passed as an argument into the parameter `value`, only if the `size` method invoked on it returns a value larger than `3`. If it does not, it will return `nil`. This is because the `if` statement itself will return `nil`. Therefore, `map` will return `[nil, 'bear']`.
