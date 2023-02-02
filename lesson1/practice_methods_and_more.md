@@ -92,3 +92,23 @@ hash.shift
 `shift` in this context will permanently remove the first key value pair from the hash and return that key value pair as a 2 element array. I found that [here](https://docs.ruby-lang.org/en/master/Hash.html#method-i-shift)
 
 ---
+
+What is the return value of the following statement? Why?
+
+```ruby
+['ant', 'bear', 'caterpillar'].pop.size
+```
+
+---
+
+The return value will be:
+
+```
+11
+```
+
+This is because we are chaining methods. First, the `pop` method is invoked, which removes the last element from the array it was called on, mutating it, then it returns that value. In this case it returns the string `'caterpillar'`.
+
+We then invoke the method `size` on the return value from calling `pop`. Since it's the string `'caterpillar'`, it returns how many characters this string has, which is `11`, therefore it returns `11`.
+
+---
