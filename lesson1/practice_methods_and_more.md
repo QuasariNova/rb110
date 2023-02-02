@@ -135,3 +135,20 @@ This code ouptuts:
 ```
 
 This is because the first element is odd, therefore `any?` does not need to further iterate because it already knows it will return `true`. It's programmed like an `||`.
+
+---
+
+8.How does take work? Is it destructive? How can we find out?
+
+```ruby
+arr = [1, 2, 3, 4, 5]
+arr.take(2)
+```
+
+[Ruby docs](https://docs.ruby-lang.org/en/master/Array.html#method-i-take) explains `take` as:
+
+```
+Returns a new Array containing the first n element of self, where n is a non-negative Integer; does not modify self.
+```
+
+So in this case, `take` will return `[1, 2]` and `arr` will still be `[1, 2, 3, 4, 5]` because `take` is not destructive.
