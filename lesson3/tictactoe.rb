@@ -28,6 +28,7 @@ EMPTY = ' '
 COMPUTER = 'O'
 USER = 'X'
 MAGIC_SQUARE = [2, 7, 6, 9, 5, 1, 4, 3, 8]
+YES_NO = ['y', 'n']
 
 
 def wait_for_keypress(center)
@@ -58,6 +59,14 @@ def display_draw(board)
   puts "\n" + STRINGS['game_draw']
 
   wait_for_keypress 0
+end
+
+def get_specific_key(possible_keys)
+  loop do
+    key = $stdin.getch
+    break key if possible_keys.include? key
+    $stdout << "\a" # bell character
+  end
 end
 
 # coin flip methods ============================================================
@@ -123,11 +132,7 @@ def get_user_mark(board)
   empty = get_empty_marks board
   display_choices empty
 
-  key = loop do
-    key_press = $stdin.getch.to_i
-    break key_press if empty.include? key_press
-    $stdout << "\a" # bell character
-  end
+  key = get_specific_key(empty.map(&:to_s)).to_i
 
   board[key] = USER
   nil
@@ -150,7 +155,7 @@ def convert_magic_square_to_square(magic_square)
   MAGIC_SQUARE.index(magic_square) + 1
 end
 
-def product_three_uniq(arr1, arr2, arr3)
+def get_all_combos(arr1, arr2, arr3)
   new_arr = []
 
   arr1.product(arr2, arr3) { |combo| new_arr << combo if combo.uniq.size == 3 }
@@ -162,7 +167,7 @@ def winner?(board, player_mark)
   marks = get_player_marks(board, player_mark)
   marks = convert_marks_to_magic_square marks
 
-  combos = product_three_uniq(marks, marks, marks)
+  combos = get_all_combos(marks, marks, marks)
 
   combos.select! { |combo| combo.sum == 15 }
   combos.size > 0
@@ -205,4 +210,10 @@ loop do
 
     game_state[:user_turn] = !game_state[:user_turn]
   end
+  print STRINGS['again']
+  display_choices(YES_NO)
+  break if get_specific_key(YES_NO) == 'n'
 end
+
+$stdout.clear_screen
+puts STRINGS['goodbye']
