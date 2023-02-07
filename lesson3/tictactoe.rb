@@ -83,6 +83,39 @@ def display_board(board)
   end
 end
 
+def get_empty_marks(board)
+  (1..9).select { |spot| board[spot] == EMPTY }
+end
+
+def display_choices(choices)
+  choice_str = if choices.size > 1
+                 choices[0...-1].join(', ') + ', ' + choices[-1].to_s
+               else
+                 choices.first
+               end
+  puts "(#{choice_str})"
+end
+
+def get_user_mark(board)
+  print STRINGS['choose_a_square']
+  empty = get_empty_marks board
+  display_choices empty
+
+  key = loop do
+    key_press = $stdin.getch.to_i
+    break key_press if empty.include? key_press
+    $stdout << "\a" # bell character
+  end
+
+  board[key] = USER
+  nil
+end
+
+def computer_play_mark(board)
+  empty = get_empty_marks board
+  board[empty.sample] = COMPUTER
+end
+
 # main program
 display_title
 
@@ -91,6 +124,17 @@ game_state[:user_turn] = flip_coin()
 display_coin_flip(game_state[:user_turn])
 display_coin_flip_winner(game_state[:user_turn])
 
-$stdout.clear_screen
-board = generate_empty_board
-display_board(board)
+game_state[:board] = generate_empty_board
+
+loop do
+  $stdout.clear_screen
+
+  display_board game_state[:board]
+  if game_state[:user_turn]
+    get_user_mark game_state[:board]
+  else
+    computer_play_mark game_state[:board]
+  end
+
+  game_state[:user_turn] = !game_state[:user_turn]
+end
