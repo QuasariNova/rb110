@@ -23,6 +23,9 @@ require 'yaml'
 require 'io/console'
 
 STRINGS = YAML.load_file "tictactoe.yaml"
+EMPTY = ' '
+COMPUTER = 'O'
+USER = 'X'
 
 def display_title
   $stdout.clear_screen
@@ -31,5 +34,24 @@ def display_title
   $stdin.getch
 end
 
+def generate_empty_board
+  Hash.new(EMPTY)
+end
+
+def display_board(board)
+  (0..2).each do |row|
+    one = row * 3 + 1
+    two = row * 3 + 2
+    three = row * 3 + 3
+    puts format(STRINGS['board_numbered'], one, two, three )
+    puts format(STRINGS['board_markers'], board[one], board[two], board[three])
+    puts STRING['board_empty']
+    puts STRING['board_separator'] unless row == 2
+  end
+end
+
 # main program
 display_title
+
+board = generate_empty_board
+display_board(board)
