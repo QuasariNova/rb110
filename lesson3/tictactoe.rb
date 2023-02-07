@@ -23,17 +23,50 @@ require 'yaml'
 require 'io/console'
 
 STRINGS = YAML.load_file "tictactoe.yaml"
+MINIMUM_COIN_TURNS = 20
 EMPTY = ' '
 COMPUTER = 'O'
 USER = 'X'
 
-def display_title
-  $stdout.clear_screen
-  puts STRINGS["title"]
-  puts("\n" + STRINGS["press_a_key"].center(58))
+
+def wait_for_keypress(center)
+  puts("\n" + STRINGS["press_a_key"].center(center))
   $stdin.getch
 end
 
+def display_title
+  $stdout.clear_screen
+  puts STRINGS["title"]
+  wait_for_keypress 58
+end
+
+# coin flip methods ============================================================
+def flip_coin()
+  [true, false].sample
+end
+
+def display_coin_flip(result)
+  coin_turns = MINIMUM_COIN_TURNS
+  coin_side = true
+  loop do
+    $stdout.clear_screen
+
+    puts STRINGS['coin_flip'].center(30)
+    puts coin_side ? STRINGS['heads'] : STRINGS['tails']
+
+    coin_turns -= 1
+    break if coin_turns <= 0 && coin_side == result
+    coin_side = !coin_side
+    sleep(0.1)
+  end
+end
+
+def display_coin_flip_winner(result)
+  puts format(STRINGS['coin_flip_win'], result ? 'You' : 'Computer').center(30)
+  wait_for_keypress 30
+end
+
+# board related methods ========================================================
 def generate_empty_board
   Hash.new(EMPTY)
 end
@@ -45,13 +78,19 @@ def display_board(board)
     three = row * 3 + 3
     puts format(STRINGS['board_numbered'], one, two, three )
     puts format(STRINGS['board_markers'], board[one], board[two], board[three])
-    puts STRING['board_empty']
-    puts STRING['board_separator'] unless row == 2
+    puts STRINGS['board_empty']
+    puts STRINGS['board_separator'] unless row == 2
   end
 end
 
 # main program
 display_title
 
+game_state = {}
+game_state[:user_turn] = flip_coin()
+display_coin_flip(game_state[:user_turn])
+display_coin_flip_winner(game_state[:user_turn])
+
+$stdout.clear_screen
 board = generate_empty_board
 display_board(board)
