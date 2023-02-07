@@ -27,17 +27,37 @@ MINIMUM_COIN_TURNS = 20
 EMPTY = ' '
 COMPUTER = 'O'
 USER = 'X'
+MAGIC_SQUARE = [2, 7, 6, 9, 5, 1, 4, 3, 8]
 
 
 def wait_for_keypress(center)
   puts("\n" + STRINGS["press_a_key"].center(center))
   $stdin.getch
+  nil
 end
 
 def display_title
   $stdout.clear_screen
   puts STRINGS["title"]
   wait_for_keypress 58
+end
+
+def display_winner(board, player_mark)
+  winner = player_mark == USER ? "You" : "Computer"
+
+  $stdout.clear_screen
+  display_board board
+  puts "\n" + format(STRINGS['game_win'], winner)
+
+  wait_for_keypress 0
+end
+
+def display_draw(board)
+  $stdout.clear_screen
+  display_board board
+  puts "\n" + STRINGS['game_draw']
+
+  wait_for_keypress 0
 end
 
 # coin flip methods ============================================================
@@ -81,6 +101,8 @@ def display_board(board)
     puts STRINGS['board_empty']
     puts STRINGS['board_separator'] unless row == 2
   end
+
+  nil
 end
 
 def get_empty_marks(board)
@@ -116,25 +138,71 @@ def computer_play_mark(board)
   board[empty.sample] = COMPUTER
 end
 
-# main program
+def get_player_marks(board, player_mark)
+  board.select { |spot, mark| mark == player_mark }.keys
+end
+
+def convert_marks_to_magic_square(marks)
+  marks.map { |mark| MAGIC_SQUARE[mark - 1] }
+end
+
+def convert_magic_square_to_square(magic_square)
+  MAGIC_SQUARE.index(magic_square) + 1
+end
+
+def product_three_uniq(arr1, arr2, arr3)
+  new_arr = []
+
+  arr1.product(arr2, arr3) { |combo| new_arr << combo if combo.uniq.size == 3 }
+
+  new_arr
+end
+
+def winner?(board, player_mark)
+  marks = get_player_marks(board, player_mark)
+  marks = convert_marks_to_magic_square marks
+
+  combos = product_three_uniq(marks, marks, marks)
+
+  combos.select! { |combo| combo.sum == 15 }
+  combos.size > 0
+end
+
+def draw?(board)
+  board.size == 9
+end
+
+# main program =================================================================
 display_title
-
-game_state = {}
-game_state[:user_turn] = flip_coin()
-display_coin_flip(game_state[:user_turn])
-display_coin_flip_winner(game_state[:user_turn])
-
-game_state[:board] = generate_empty_board
-
 loop do
-  $stdout.clear_screen
+  game_state = {}
+  game_state[:user_turn] = flip_coin()
+  display_coin_flip(game_state[:user_turn])
+  display_coin_flip_winner(game_state[:user_turn])
 
-  display_board game_state[:board]
-  if game_state[:user_turn]
-    get_user_mark game_state[:board]
-  else
-    computer_play_mark game_state[:board]
+  game_state[:board] = generate_empty_board
+
+  loop do
+    $stdout.clear_screen
+    display_board game_state[:board]
+
+    if game_state[:user_turn]
+      get_user_mark game_state[:board]
+    else
+      computer_play_mark game_state[:board]
+    end
+
+    player_mark = game_state[:user_turn] ? USER : COMPUTER
+    if winner?(game_state[:board], player_mark)
+      display_winner(game_state[:board], player_mark)
+      break
+    end
+
+    if draw?(game_state[:board])
+      display_draw(game_state[:board])
+      break
+    end
+
+    game_state[:user_turn] = !game_state[:user_turn]
   end
-
-  game_state[:user_turn] = !game_state[:user_turn]
 end

@@ -24,3 +24,5 @@ board_empty    : '     |     |     '
 coin_flip      : 'Flipping coin:'
 coin_flip_win  : '%s won the coin flip!'
 choose_a_square: 'Please choose a square'
+game_draw      : "It's a draw!"
+game_win       : '%s won the game!'
