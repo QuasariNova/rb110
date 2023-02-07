@@ -13,10 +13,26 @@ MAGIC_SQUARE = [2, 7, 6, 9, 5, 1, 4, 3, 8]
 YES_NO = ['y', 'n']
 TERMINAL_WIDTH = 80
 
+# Bonus Feature 1: I PEDACed it in /lesson3/ttt/bonus1.rb
+def joinor(arr, sep=', ', word='or')
+  return '' if arr.size < 1
+  return arr.first.to_s if arr.size == 1
+  return "#{arr.first} #{word} #{arr.last}" if arr.size == 2
+  "#{arr[0...-1].join(sep)}#{sep}#{word} #{arr.last}"
+end
+
 def display_strings(strings)
   strings = [strings] if strings.instance_of?(String)
 
   puts(strings.map { |string| string.center(TERMINAL_WIDTH) })
+end
+
+def get_specific_key(possible_keys)
+  loop do
+    key = $stdin.getch
+    break key if possible_keys.include? key
+    $stdout << "\a" # bell character
+  end
 end
 
 def wait_for_keypress
@@ -47,14 +63,6 @@ def display_draw(board)
   display_strings STRINGS['game_draw']
 
   wait_for_keypress
-end
-
-def get_specific_key(possible_keys)
-  loop do
-    key = $stdin.getch
-    break key if possible_keys.include? key
-    $stdout << "\a" # bell character
-  end
 end
 
 # coin flip methods ============================================================
@@ -105,11 +113,7 @@ def get_empty_marks(board)
 end
 
 def display_choices(choices)
-  choice_str = if choices.size > 1
-                 "#{choices[0...-1].join(', ')}, or #{choices[-1]}"
-               else
-                 choices.first
-               end
+  choice_str = joinor(choices)
   display_strings "(#{choice_str})"
 end
 
