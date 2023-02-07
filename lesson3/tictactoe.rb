@@ -19,3 +19,17 @@
 # 10. Goodbye
 
 # Flowchart is on the repository /lesson3/tictactoe.diagram.png
+require 'yaml'
+require 'io/console'
+
+STRINGS = YAML.load_file "tictactoe.yaml"
+
+def display_title
+  $stdout.clear_screen
+  puts STRINGS["title"]
+  puts("\n" + STRINGS["press_a_key"].center(58))
+  $stdin.getch
+end
+
+# main program
+display_title
