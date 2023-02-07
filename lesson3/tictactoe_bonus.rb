@@ -13,6 +13,8 @@ MAGIC_SQUARE = [2, 7, 6, 9, 5, 1, 4, 3, 8]
 YES_NO = ['y', 'n']
 TERMINAL_WIDTH = 80
 
+# General Methods ==============================================================
+
 # Bonus Feature 1: I PEDACed it in /lesson3/ttt/bonus1.rb
 def joinor(arr, sep=', ', word='or')
   return '' if arr.size < 1
@@ -47,19 +49,19 @@ def display_title
   wait_for_keypress
 end
 
-def display_winner(board, player_mark)
-  winner = player_mark == USER_MARK ? 'You' : 'Computer'
+def display_winner(game_state)
+  winner = game_state[:user_turn] ? 'You' : 'Computer'
 
   $stdout.clear_screen
-  display_board board
+  display_board game_state[:board]
   display_strings format(STRINGS['game_win'], winner)
 
   wait_for_keypress
 end
 
-def display_draw(board)
+def display_draw(game_state)
   $stdout.clear_screen
-  display_board board
+  display_board game_state[:board]
   display_strings STRINGS['game_draw']
 
   wait_for_keypress
@@ -96,6 +98,8 @@ def initialize_board
 end
 
 def display_board(board)
+  $stdout.clear_screen
+
   3.times do |row|
     nums = (1..3).map { |num| row * 3 + num }
     display_strings format(STRINGS['board_numbered'], *nums)
@@ -153,8 +157,9 @@ def get_all_combos(arr1, arr2, arr3)
   new_arr
 end
 
-def winner?(board, player_mark)
-  marks = get_player_marks(board, player_mark)
+def won?(game_state)
+  player_mark = game_state[:user_turn] ? USER_MARK : COMPUTER_MARK
+  marks = get_player_marks(game_state[:board], player_mark)
   marks = convert_marks_to_magic_square marks
 
   combos = get_all_combos(marks, marks, marks)
@@ -163,12 +168,13 @@ def winner?(board, player_mark)
   combos.size > 0
 end
 
-def draw?(board)
-  board.size == 9
+def draw?(game_state)
+  game_state[:board].size == 9
 end
 
 # main program =================================================================
 display_title
+
 loop do
   game_state = {}
   game_state[:user_turn] = flip_coin
@@ -177,24 +183,24 @@ loop do
 
   game_state[:board] = initialize_board
 
-  loop do
-    $stdout.clear_screen
-    display_board game_state[:board]
+  display_board game_state[:board]
 
+  loop do
     if game_state[:user_turn]
       make_user_mark game_state[:board]
     else
       make_computer_mark game_state[:board]
     end
 
-    player_mark = game_state[:user_turn] ? USER_MARK : COMPUTER_MARK
-    if winner?(game_state[:board], player_mark)
-      display_winner(game_state[:board], player_mark)
+    display_board game_state[:board]
+
+    if won? game_state
+      display_winner game_state
       break
     end
 
-    if draw? game_state[:board]
-      display_draw game_state[:board]
+    if draw? game_state
+      display_draw game_state
       break
     end
 
