@@ -7,7 +7,7 @@
 #   - Added initialize_score that adds/resets :score in game_state
 #   - Changed display_game_state to display score
 #   - Reset Score in play_match
-#   - match_won? checks score to see if match is won on line 183
+#   - match_won? checks score to see if match is won
 # Bonus Feature 3: Computer AI Defense
 #   - Added get_ai_defensive_move which finds out if an opponent wins
 #   - Added check in make_computer_mark to check defense first
