@@ -6,7 +6,7 @@
 #   - Added Menu, so we could change how many games a match we play
 #   - Added initialize_score on line 269, that adds/resets :score in game_state
 #   - Changed display_game_state on line 101 to display score
-#   - Reset Score in match_loop on line 52
+#   - Reset Score in play_match on line 52
 #   - match_won? checks score to see if match is won on line 179
 
 require 'yaml'
@@ -40,13 +40,13 @@ def program_loop
       end
     end
 
-    match_loop game_state
+    play_match game_state
   end
 
   display_goodbye
 end
 
-def match_loop(game_state)
+def play_match(game_state)
   loop do
     choose_first_player game_state
     initialize_score game_state
