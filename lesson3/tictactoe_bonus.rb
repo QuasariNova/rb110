@@ -17,6 +17,43 @@
 #       winning spot
 #     - Changed so I could use it to detect offensive moves as well as
 #       defensive moves
+# Bonus Feature 5: Computer Turn Refinements
+#   a. Reverse offense and defense steps.
+#     - I went ahead and added a difficulty level to the menu and readded just
+#       random moves as 'RANDOM' and the one that choses moves based on state as
+#       'NORMAL'
+#     - make_computer_move now checks difficulty and runs random_ai_mark or
+#       normal_ai mark based on difficulty setting
+#     - I changed the normal_ai_mark method to do offense prior to defense
+#   b. Make AI chose 5 if available
+#     - I changed the normal_ai_mark method to do this
+#   c. Change the game so that the computer can move first. Ask user who should
+#      play first.
+#     - Already had it implemented either player could start, though it was just
+#       through a coin flip. Adding menu option
+#   d. Can you add another "who goes first" option that lets the computer
+#      choose who goes first?
+#     - when I added the menu option in c, this was already done as coin flip
+#       was my default option
+# Bonus Feature 6: Remove superfluous code from game loop.
+#   - I used a different loop, but I already have an implementation to use a
+#     method for both players. The two breaks I have for breaking if draw or win
+#     make sense to me, so I'm not going to go out of my way to turn that into
+#     one break.
+# Extra Features:
+# 1. Minimax: maybe
+# 2. Bigger Boards
+#   - I would have to define Magic Squares for each size and their sums
+#   - I would also have to define keys for indexes
+#     - With my current Input system, I could go up to 6x6 comfortably
+#       (26 alpha, 10 numeric)
+#   - I would have to draw it...
+#   - Everything else is ready to scale as long as those three things are fixed
+# 3. More players
+#   - I'm not interested in that right now, but adding more marks would do it
+#   - would have to have a round robin instead of flipping
+#   - Would probably change mark constants to an array of marks, so that player #     index = mark
+#   - could feasibly change what I got now to do it, but again not interested
 
 require 'yaml'
 require 'io/console'
@@ -24,19 +61,21 @@ require 'io/console'
 STRINGS = YAML.load_file "tictactoe_bonus.yaml"
 TITLE_WIDTH = STRINGS['title'][0].size
 TERMINAL_WIDTH = 80
-MENU_KEYS = ['p', 'm', 'q']
+MENU_KEYS = ['p', 'm', 'f', 'd', 'q']
 MATCH_LENGTHS = [1, 3, 5, 7, 9]
 MINIMUM_COIN_TURNS = 20
 EMPTY = ' '
 COMPUTER_MARK = 'O'
 USER_MARK = 'X'
 MAGIC_SQUARE = [2, 7, 6, 9, 5, 1, 4, 3, 8]
+MAGIC_SUM = 15
 YES_NO = ['y', 'n']
 ANIMATION_TIME = 0.1
+BOARD_SIZE = 3
 
-# Invoked on line 310
+# Invoked on line 464
 def program_loop
-  game_state = { match_len: 1 }
+  game_state = { match_len: 1, difficulty: 1, user_first: true, random: true }
 
   loop do # program loop
     break if loop do # menu loop
@@ -46,6 +85,8 @@ def program_loop
       case choice
       when 'q' then break true
       when 'p' then break false
+      when 'd' then change_difficulty game_state
+      when 'f' then change_first_player game_state
       when 'm' then change_match_len game_state
       end
     end
@@ -127,26 +168,34 @@ end
 def display_menu(game_state)
   $stdout.clear_screen
   display_strings STRINGS['title']
-  puts ''
+  puts nil
   display_strings STRINGS['menu_play_game'].ljust(TITLE_WIDTH)
   display_strings get_match_len_str(game_state[:match_len]).ljust(TITLE_WIDTH)
+  display_strings get_difficulty_str(game_state[:difficulty]).ljust(TITLE_WIDTH)
+  display_strings get_first_player_str(game_state).ljust(TITLE_WIDTH)
   display_strings STRINGS['menu_quit'].ljust(TITLE_WIDTH)
 end
 
 def choose_first_player(game_state)
-  game_state[:user_turn] = flip_coin
-  display_coin_flip_animation(game_state[:user_turn])
-  display_coin_flip_winner(game_state[:user_turn])
+  if game_state[:random]
+    game_state[:user_turn] = flip_coin
+    display_coin_flip_animation(game_state[:user_turn])
+    display_coin_flip_winner(game_state[:user_turn])
+  else
+    game_state[:user_turn] = game_state[:user_first]
+  end
+
+  nil
 end
 
 def display_board(board)
-  3.times do |row|
-    nums = (1..3).map { |num| row * 3 + num }
+  BOARD_SIZE.times do |row|
+    nums = (1..BOARD_SIZE).map { |num| row * BOARD_SIZE + num }
     display_strings format(STRINGS['board_numbered'], *nums)
     display_strings format(STRINGS['board_markers'],
                            *(nums.map { |num| board[num] }))
     display_strings STRINGS['board_empty']
-    display_strings STRINGS['board_separator'] unless row == 2
+    display_strings STRINGS['board_separator'] unless row == BOARD_SIZE - 1
   end
 
   nil
@@ -202,7 +251,7 @@ def won?(game_state)
   marks = get_player_marks(game_state[:board], player_mark)
   marks = convert_marks_to_magic_square marks
 
-  combos = find_all_marking_combos(3, marks)
+  combos = find_all_marking_combos(BOARD_SIZE, marks)
 
   combos.select! { |combo| combo_wins? combo }
   combos.size > 0
@@ -219,21 +268,33 @@ def make_turn_mark(game_state)
   if game_state[:user_turn]
     make_user_mark game_state[:board]
   else
-    make_computer_mark game_state[:board]
+    make_computer_mark game_state
   end
 end
 
-def make_computer_mark(board)
-  empty = get_empty_marks board
-  defensive = find_possible_win(board, USER_MARK)
+def make_computer_mark(game_state)
+  mark = case game_state[:difficulty]
+         when 0 then random_ai_mark game_state[:board]
+         when 1 then normal_ai_mark game_state[:board]
+         end
+  game_state[:board][mark] = COMPUTER_MARK
+end
+
+def normal_ai_mark board
   offensive = find_possible_win(board, COMPUTER_MARK)
-  if defensive
-    board[defensive] = COMPUTER_MARK
-  elsif offensive
-    board[offensive] = COMPUTER_MARK
-  else
-    board[empty.sample] = COMPUTER_MARK
-  end
+  defensive = find_possible_win(board, USER_MARK)
+
+  return offensive if offensive
+  return defensive if defensive
+
+  empty = get_empty_marks board
+  return 5 if empty.include? 5
+  empty.sample
+end
+
+def random_ai_mark board
+  empty = get_empty_marks board
+  empty.sample
 end
 
 def make_user_mark(board)
@@ -253,7 +314,7 @@ def find_possible_win(board, mark)
   marks = convert_marks_to_magic_square get_player_marks(board, mark)
 
   # get all 2 mark comboes
-  combos = find_all_marking_combos(2, marks)
+  combos = find_all_marking_combos(BOARD_SIZE - 1, marks)
 
   # product with empty marks, so that empty marks are the first in the sub array
   possible_wins = empty.product(combos).map { |sub| sub.flatten }
@@ -276,6 +337,28 @@ def change_match_len(game_state)
   nil
 end
 
+def change_difficulty(game_state)
+  next_index = game_state[:difficulty] + 1
+  next_index = 0 if next_index >= STRINGS['ai_difficulties'].size
+  game_state[:difficulty] = next_index
+
+  nil
+end
+
+def change_first_player(game_state)
+  case
+  when game_state[:random]
+    game_state[:random] = false
+    game_state[:user_first] = true
+  when game_state[:user_first]
+    game_state[:user_first] = false
+  else
+    game_state[:random] = true
+  end
+
+  nil
+end
+
 def get_filtered_keypress(possible_keys)
   loop do
     key = $stdin.getch
@@ -293,6 +376,19 @@ end
 def get_match_len_str(length)
   best_of = format(STRINGS['best_of'], length)
   format(STRINGS['menu_match_len'], best_of)
+end
+
+def get_difficulty_str(index)
+  format(STRINGS['menu_difficulty'], STRINGS['ai_difficulties'][index])
+end
+
+def get_first_player_str(game_state)
+  player = case
+           when game_state[:random]     then 'Coin Flip'
+           when game_state[:user_first] then 'You'
+           else                              'Computer'
+           end
+  format(STRINGS['menu_first'], player)
 end
 
 def display_strings(strings)
@@ -330,7 +426,7 @@ def convert_magic_square_to_square(magic_square)
 end
 
 def combo_wins?(combo)
-  combo.sum == 15
+  combo.sum == MAGIC_SUM
 end
 
 # find_all_marking_combos does what it says. When you pass in an array of marks
