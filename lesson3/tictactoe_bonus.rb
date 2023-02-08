@@ -121,6 +121,8 @@ def play_match(game_state)
 
       play_game(game_state)
       break if match_won? game_state
+
+      flip_turn_player game_state
     end
     display_match_winner game_state
 
@@ -143,7 +145,7 @@ def play_game(game_state)
 
     break display_draw(game_state) if draw?(game_state)
 
-    game_state[:user_turn] = !game_state[:user_turn]
+    flip_turn_player game_state
   end
 end
 
@@ -271,7 +273,7 @@ end
 # count empty squares as they don't technically have keys yet. So, we just
 # gotta check if all the squares are filled.
 def draw?(game_state)
-  game_state[:board].size == 9
+  game_state[:board].size == BOARD_SIZE**2
 end
 
 def make_turn_mark(game_state)
@@ -298,7 +300,8 @@ def normal_ai_mark(board)
   return defensive if defensive
 
   empty = get_empty_marks board
-  return 5 if empty.include? 5
+  middle = (BOARD_SIZE**2 / 2.0).ceil
+  return middle if empty.include?(middle) && BOARD_SIZE.odd?
   empty.sample
 end
 
@@ -428,7 +431,7 @@ def flip_coin
 end
 
 def get_empty_marks(board)
-  (1..9).select { |spot| board[spot] == EMPTY }
+  (1..BOARD_SIZE**2).select { |spot| board[spot] == EMPTY }
 end
 
 def get_player_marks(board, player_mark)
@@ -445,6 +448,12 @@ end
 
 def combo_wins?(combo)
   combo.sum == MAGIC_SUM
+end
+
+def flip_turn_player(game_state)
+  game_state[:user_turn] = !game_state[:user_turn]
+
+  nil
 end
 
 # find_all_marking_combos does what it says. When you pass in an array of marks
