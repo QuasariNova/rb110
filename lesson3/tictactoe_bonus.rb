@@ -1,13 +1,16 @@
 # This file is just for implementing the bonus features assignment. If you want
 # to look at what I started with, it is in /lesson3/tictactoe.rb
 
-# Bonus Feature 1: joinor implementation on 302 line
+# Bonus Feature 1: joinor implementation on 351 line
 # Bonus Feature 2: Scoring
 #   - Added Menu, so we could change how many games a match we play
-#   - Added initialize_score on line 269, that adds/resets :score in game_state
-#   - Changed display_game_state on line 101 to display score
-#   - Reset Score in play_match on line 52
-#   - match_won? checks score to see if match is won on line 179
+#   - Added initialize_score on line 299, that adds/resets :score in game_state
+#   - Changed display_game_state on line 108 to display score
+#   - Reset Score in play_match on line 56
+#   - match_won? checks score to see if match is won on line 183
+# Bonus Feature 3: Computer AI Defense
+#   - Added get_ai_defensive_move on 241, which finds out if an opponent
+#   - Added check in make_computer_mark on line 220 to check defense first
 
 require 'yaml'
 require 'io/console'
@@ -23,7 +26,7 @@ COMPUTER_MARK = 'O'
 USER_MARK = 'X'
 MAGIC_SQUARE = [2, 7, 6, 9, 5, 1, 4, 3, 8]
 YES_NO = ['y', 'n']
-ANIMATION_TIME = .1
+ANIMATION_TIME = 0.1
 
 # Invoked on line 310
 def program_loop
@@ -193,9 +196,9 @@ def won?(game_state)
   marks = get_player_marks(game_state[:board], player_mark)
   marks = convert_marks_to_magic_square marks
 
-  combos = find_all_marking_combos(marks, marks, marks)
+  combos = find_all_marking_combos(3, marks)
 
-  combos.select! { |combo| combo.sum == 15 }
+  combos.select! { |combo| combo_wins? combo }
   combos.size > 0
 end
 
@@ -216,7 +219,12 @@ end
 
 def make_computer_mark(board)
   empty = get_empty_marks board
-  board[empty.sample] = COMPUTER_MARK
+  defensive = get_ai_defensive_move board
+  if defensive
+    board[defensive] = COMPUTER_MARK
+  else
+    board[empty.sample] = COMPUTER_MARK
+  end
 end
 
 def make_user_mark(board)
@@ -228,6 +236,27 @@ def make_user_mark(board)
 
   board[key] = USER_MARK
   nil
+end
+
+def get_ai_defensive_move(board)
+  empty = convert_marks_to_magic_square get_empty_marks(board)
+
+  enemy_marks = convert_marks_to_magic_square get_player_marks(board, USER_MARK)
+
+  # get all 2 mark comboes
+  enemy_combos = find_all_marking_combos(2, enemy_marks)
+
+  # product with empty marks
+  possible_losses = empty.product(enemy_combos).map { |sub| sub.flatten }
+
+  # Filter wins
+  possible_losses.select! { |combo| combo_wins? combo }
+
+  if possible_losses.size > 0
+    convert_magic_square_to_square possible_losses.sample[0]
+  else
+    nil
+  end
 end
 
 def change_match_len(game_state)
@@ -291,12 +320,31 @@ def convert_magic_square_to_square(magic_square)
   MAGIC_SQUARE.index(magic_square) + 1
 end
 
-def find_all_marking_combos(arr1, arr2, arr3)
-  new_arr = []
+def combo_wins?(combo)
+  combo.sum == 15
+end
 
-  arr1.product(arr2, arr3) { |combo| new_arr << combo if combo.uniq.size == 3 }
+# find_all_marking_combos does what it says. When you pass in an array of marks
+# and how many marks_in_line it takes to make a line, it returns every
+# combination of marks_in_line marks as a nested_array. I did work on this
+# algorithm in /lesson3/ttt/find_all_marking_combos.rb. My original way was
+# couldn't scale and wasn't as usable for the AI functions.
+def find_all_marking_combos(marks_in_line, marks)
+  return [] if marks.size < marks_in_line
+  return marks if marks_in_line == 1
 
-  new_arr
+  position = 0
+  out = []
+
+  until position > marks.size - marks_in_line
+    first = [marks[position]]
+    rest = find_all_marking_combos(marks_in_line - 1, marks[(position + 1)..-1])
+    out += first.product(rest).map { |sub| sub.flatten }
+
+    position += 1
+  end
+
+  out
 end
 
 # Bonus Feature 1: I PEDACed it in /lesson3/ttt/bonus1.rb
