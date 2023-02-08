@@ -1,16 +1,22 @@
 # This file is just for implementing the bonus features assignment. If you want
 # to look at what I started with, it is in /lesson3/tictactoe.rb
 
-# Bonus Feature 1: joinor implementation on 351 line
+# Bonus Feature 1: joinor implementation
 # Bonus Feature 2: Scoring
 #   - Added Menu, so we could change how many games a match we play
-#   - Added initialize_score on line 299, that adds/resets :score in game_state
-#   - Changed display_game_state on line 108 to display score
-#   - Reset Score in play_match on line 56
+#   - Added initialize_score that adds/resets :score in game_state
+#   - Changed display_game_state to display score
+#   - Reset Score in play_match
 #   - match_won? checks score to see if match is won on line 183
 # Bonus Feature 3: Computer AI Defense
-#   - Added get_ai_defensive_move on 241, which finds out if an opponent
-#   - Added check in make_computer_mark on line 220 to check defense first
+#   - Added get_ai_defensive_move which finds out if an opponent wins
+#   - Added check in make_computer_mark to check defense first
+# Bonus Feature 4: Computer AI Offense
+#   - Changed get_ai_defensive_move to find_possible_win
+#     - This is more useful and given a board and a mark, will find a possible
+#       winning spot
+#     - Changed so I could use it to detect offensive moves as well as
+#       defensive moves
 
 require 'yaml'
 require 'io/console'
@@ -219,9 +225,12 @@ end
 
 def make_computer_mark(board)
   empty = get_empty_marks board
-  defensive = get_ai_defensive_move board
+  defensive = find_possible_win(board, USER_MARK)
+  offensive = find_possible_win(board, COMPUTER_MARK)
   if defensive
     board[defensive] = COMPUTER_MARK
+  elsif offensive
+    board[offensive] = COMPUTER_MARK
   else
     board[empty.sample] = COMPUTER_MARK
   end
@@ -238,22 +247,22 @@ def make_user_mark(board)
   nil
 end
 
-def get_ai_defensive_move(board)
+def find_possible_win(board, mark)
   empty = convert_marks_to_magic_square get_empty_marks(board)
 
-  enemy_marks = convert_marks_to_magic_square get_player_marks(board, USER_MARK)
+  marks = convert_marks_to_magic_square get_player_marks(board, mark)
 
   # get all 2 mark comboes
-  enemy_combos = find_all_marking_combos(2, enemy_marks)
+  combos = find_all_marking_combos(2, marks)
 
-  # product with empty marks
-  possible_losses = empty.product(enemy_combos).map { |sub| sub.flatten }
+  # product with empty marks, so that empty marks are the first in the sub array
+  possible_wins = empty.product(combos).map { |sub| sub.flatten }
 
   # Filter wins
-  possible_losses.select! { |combo| combo_wins? combo }
+  possible_wins.select! { |combo| combo_wins? combo }
 
-  if possible_losses.size > 0
-    convert_magic_square_to_square possible_losses.sample[0]
+  if possible_wins.size > 0
+    convert_magic_square_to_square possible_wins.sample[0]
   else
     nil
   end
