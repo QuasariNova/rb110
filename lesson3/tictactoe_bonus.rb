@@ -1,19 +1,86 @@
 # This file is just for implementing the bonus features assignment. If you want
 # to look at what I started with, it is in /lesson3/tictactoe.rb
 
+# Bonus Feature 1: joinor implementation on line 86
+# Bonus Feature 2: Scoring
+#   - Added Menu, so we could change how many games a match we play
+#   - Added reset_score on line 307 , that adds/resets :score in game_state
+#   - Changed display_game_screen on line 154 to display score
+#   - Reset Score in match_loop on line 52
+#   - match_won? checks score to see if match is won on line 311
+
+
 require 'yaml'
 require 'io/console'
 
-STRINGS = YAML.load_file "tictactoe.yaml"
+STRINGS = YAML.load_file "tictactoe_bonus.yaml"
+TITLE_WIDTH = STRINGS['title'][0].size
+TERMINAL_WIDTH = 80
+MENU_KEYS = ['p', 'm', 'q']
+MATCH_LENGTHS = [1, 3, 5, 7, 9]
 MINIMUM_COIN_TURNS = 20
 EMPTY = ' '
 COMPUTER_MARK = 'O'
 USER_MARK = 'X'
 MAGIC_SQUARE = [2, 7, 6, 9, 5, 1, 4, 3, 8]
 YES_NO = ['y', 'n']
-TERMINAL_WIDTH = 80
 
-# General Methods ==============================================================
+def program_loop
+  game_state = { match_len: 1 }
+
+  loop do # program loop
+    break if loop do # menu loop
+      display_menu game_state
+      choice = get_specific_key MENU_KEYS
+
+      case choice
+      when 'q' then break true
+      when 'p' then break false
+      when 'm' then change_match_len game_state
+      end
+    end
+
+    match_loop game_state
+  end
+
+  display_goodbye
+end
+
+def match_loop(game_state)
+  loop do
+    choose_first_player game_state
+    reset_score game_state
+
+    loop do
+      game_state[:board] = initialize_board
+
+      play_game(game_state)
+      break if match_won? game_state
+    end
+    display_match_won game_state
+
+    display_strings STRINGS['again']
+    display_choices(YES_NO)
+    break if get_specific_key(YES_NO) == 'n'
+  end
+end
+
+def play_game(game_state)
+  loop do
+    display_game_screen game_state
+
+    make_turn_mark game_state
+
+    if won?(game_state)
+      game_state[:score][game_state[:user_turn]] += 1
+      break display_winner(game_state)
+    end
+
+    break display_draw(game_state) if draw?(game_state)
+
+    game_state[:user_turn] = !game_state[:user_turn]
+  end
+end
 
 # Bonus Feature 1: I PEDACed it in /lesson3/ttt/bonus1.rb
 def joinor(arr, sep=', ', word='or')
@@ -43,28 +110,79 @@ def wait_for_keypress
   nil
 end
 
-def display_title
+def display_choices(choices)
+  choice_str = joinor(choices)
+  display_strings "(#{choice_str})"
+end
+
+def display_score(score)
+  display_strings format(STRINGS['score'], score[true], score[false])
+end
+
+def initialize_score
+  {true => 0, false => 0}
+end
+
+# Configuration Methods
+def change_match_len(game_state)
+  next_index = MATCH_LENGTHS.index(game_state[:match_len]) + 1
+  next_index = 0 if next_index == MATCH_LENGTHS.size
+  game_state[:match_len] = MATCH_LENGTHS[next_index]
+
+  nil
+end
+
+def get_match_len_str(length)
+  best_of = format(STRINGS['best_of'], length)
+  format(STRINGS['menu_match_len'], best_of)
+end
+
+# Screen Methods ==============================================================
+
+def display_menu(game_state)
   $stdout.clear_screen
   display_strings STRINGS['title']
-  wait_for_keypress
+  puts ''
+  display_strings STRINGS['menu_play_game'].ljust(TITLE_WIDTH)
+  display_strings get_match_len_str(game_state[:match_len]).ljust(TITLE_WIDTH)
+  display_strings STRINGS['menu_quit'].ljust(TITLE_WIDTH)
+end
+
+def display_game_screen(game_state)
+  $stdout.clear_screen
+
+  display_score(game_state[:score]) if game_state[:match_len] > 1
+
+  display_board(game_state[:board])
 end
 
 def display_winner(game_state)
   winner = game_state[:user_turn] ? 'You' : 'Computer'
 
-  $stdout.clear_screen
-  display_board game_state[:board]
+  display_game_screen game_state
   display_strings format(STRINGS['game_win'], winner)
+
+  wait_for_keypress unless match_won? game_state
+end
+
+def display_draw(game_state)
+  display_game_screen game_state
+  display_strings STRINGS['game_draw']
 
   wait_for_keypress
 end
 
-def display_draw(game_state)
-  $stdout.clear_screen
-  display_board game_state[:board]
-  display_strings STRINGS['game_draw']
+def display_match_won(game_state)
+  winner = game_state[:user_turn] ? 'You' : 'Computer'
+
+  display_strings format(STRINGS['match_win'], winner)
 
   wait_for_keypress
+end
+
+def display_goodbye
+  $stdout.clear_screen
+  display_strings STRINGS['goodbye']
 end
 
 # coin flip methods ============================================================
@@ -98,8 +216,6 @@ def initialize_board
 end
 
 def display_board(board)
-  $stdout.clear_screen
-
   3.times do |row|
     nums = (1..3).map { |num| row * 3 + num }
     display_strings format(STRINGS['board_numbered'], *nums)
@@ -114,27 +230,6 @@ end
 
 def get_empty_marks(board)
   (1..9).select { |spot| board[spot] == EMPTY }
-end
-
-def display_choices(choices)
-  choice_str = joinor(choices)
-  display_strings "(#{choice_str})"
-end
-
-def make_user_mark(board)
-  display_strings STRINGS['choose_a_square']
-  empty = get_empty_marks board
-  display_choices empty
-
-  key = get_specific_key(empty.map(&:to_s)).to_i
-
-  board[key] = USER_MARK
-  nil
-end
-
-def make_computer_mark(board)
-  empty = get_empty_marks board
-  board[empty.sample] = COMPUTER_MARK
 end
 
 def get_player_marks(board, player_mark)
@@ -157,6 +252,40 @@ def get_all_combos(arr1, arr2, arr3)
   new_arr
 end
 
+# Player Controller Methods ====================================================
+
+def make_turn_mark(game_state)
+  if game_state[:user_turn]
+    make_user_mark game_state[:board]
+  else
+    make_computer_mark game_state[:board]
+  end
+end
+
+def make_user_mark(board)
+  display_strings STRINGS['choose_a_square']
+  empty = get_empty_marks board
+  display_choices empty
+
+  key = get_specific_key(empty.map(&:to_s)).to_i
+
+  board[key] = USER_MARK
+  nil
+end
+
+def make_computer_mark(board)
+  empty = get_empty_marks board
+  board[empty.sample] = COMPUTER_MARK
+end
+
+# Game Flow Methods ============================================================
+
+# I use a 3x3 Magic Square to tell if a user has won. Basically, a Magic Square
+# has all it's rows, columns, and regular diagonals sum up to the same number.
+# In the case of the 3x3 one, the sum is 15. Because of how it is set up, these
+# are the only trios of values in the square that add up to that value, so if
+# if any three squares when converted to their magic square value sum up to 15
+# we know that there was a line made!
 def won?(game_state)
   player_mark = game_state[:user_turn] ? USER_MARK : COMPUTER_MARK
   marks = get_player_marks(game_state[:board], player_mark)
@@ -168,48 +297,27 @@ def won?(game_state)
   combos.size > 0
 end
 
+# Because I set the board hashes default to an empty space, we don't have to
+# count empty squares as they don't technically have keys yet. So, we just
+# gotta check if all the squares are filled.
 def draw?(game_state)
   game_state[:board].size == 9
 end
 
-# main program =================================================================
-display_title
+def reset_score(game_state)
+  game_state[:score] = { true => 0, false => 0 }
+end
 
-loop do
-  game_state = {}
+def match_won?(game_state)
+  target_wins = (game_state[:match_len] / 2.0).ceil
+  game_state[:score][game_state[:user_turn]] >= target_wins
+end
+
+def choose_first_player(game_state)
   game_state[:user_turn] = flip_coin
   animate_coin_flip(game_state[:user_turn])
   display_coin_flip_winner(game_state[:user_turn])
-
-  game_state[:board] = initialize_board
-
-  display_board game_state[:board]
-
-  loop do
-    if game_state[:user_turn]
-      make_user_mark game_state[:board]
-    else
-      make_computer_mark game_state[:board]
-    end
-
-    display_board game_state[:board]
-
-    if won? game_state
-      display_winner game_state
-      break
-    end
-
-    if draw? game_state
-      display_draw game_state
-      break
-    end
-
-    game_state[:user_turn] = !game_state[:user_turn]
-  end
-  display_strings STRINGS['again']
-  display_choices(YES_NO)
-  break if get_specific_key(YES_NO) == 'n'
 end
 
-$stdout.clear_screen
-display_strings STRINGS['goodbye']
+# main program =================================================================
+program_loop
