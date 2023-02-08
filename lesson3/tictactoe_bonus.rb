@@ -23,6 +23,7 @@ COMPUTER_MARK = 'O'
 USER_MARK = 'X'
 MAGIC_SQUARE = [2, 7, 6, 9, 5, 1, 4, 3, 8]
 YES_NO = ['y', 'n']
+ANIMATION_TIME = .1
 
 # Invoked on line 310
 def program_loop
@@ -158,7 +159,7 @@ def display_coin_flip_animation(result)
 
     break if coin_turns <= 0 && coin_turns.even? == result
     coin_turns -= 1
-    sleep(0.1)
+    sleep(ANIMATION_TIME)
   end
 end
 
