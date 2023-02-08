@@ -41,7 +41,8 @@
 
 # e
 # find_all_marking_combos(3, [1]) == []
-# find_all_marking_combos(3, [1, 2, 3, 4]) == [[1, 2, 3], [1, 2, 4], [1, 3, 4], #                                              [2, 3, 4]]
+# find_all_marking_combos(3, [1, 2, 3, 4]) == [[1, 2, 3], [1, 2, 4], [1, 3, 4],
+#                                              [2, 3, 4]]
 # find_all_marking_combos(5, [1, 2, 3, 4, 5]) == [[1, 2, 3, 4, 5]]
 
 # d
@@ -78,8 +79,7 @@ def find_all_marking_combos(marks_in_line, marks)
   until position > marks.size - marks_in_line
     first = [marks[position]]
     rest = find_all_marking_combos(marks_in_line - 1, marks[(position + 1)..-1])
-    out += first.product(rest).map { |sub| sub.flatten }
-
+    out += first.product(rest).map(&:flatten)
     position += 1
   end
 

@@ -52,7 +52,8 @@
 # 3. More players
 #   - I'm not interested in that right now, but adding more marks would do it
 #   - would have to have a round robin instead of flipping
-#   - Would probably change mark constants to an array of marks, so that player #     index = mark
+#   - Would probably change mark constants to an array of marks, so that player
+#     index = mark
 #   - could feasibly change what I got now to do it, but again not interested
 
 require 'yaml'
@@ -82,19 +83,32 @@ def program_loop
       display_menu game_state
       choice = get_filtered_keypress MENU_KEYS
 
-      case choice
-      when 'q' then break true
-      when 'p' then break false
-      when 'd' then change_difficulty game_state
-      when 'f' then change_first_player game_state
-      when 'm' then change_match_len game_state
-      end
+      menu_do(game_state, choice)
+
+      break true if game_state[:menu_action] == :quit_action
+      break false unless game_state[:menu_action] == :option_action
     end
 
     play_match game_state
   end
 
   display_goodbye
+end
+
+def menu_do(game_state, choice)
+  case choice
+  when 'q' then
+    game_state[:menu_action] = :quit_action
+    return
+  when 'p' then
+    game_state[:menu_action] = :play_action
+    return
+  when 'd' then change_difficulty game_state
+  when 'f' then change_first_player game_state
+  when 'm' then change_match_len game_state
+  end
+  game_state[:menu_action] = :option_action
+  nil
 end
 
 def play_match(game_state)
@@ -169,11 +183,7 @@ def display_menu(game_state)
   $stdout.clear_screen
   display_strings STRINGS['title']
   puts nil
-  display_strings STRINGS['menu_play_game'].ljust(TITLE_WIDTH)
-  display_strings get_match_len_str(game_state[:match_len]).ljust(TITLE_WIDTH)
-  display_strings get_difficulty_str(game_state[:difficulty]).ljust(TITLE_WIDTH)
-  display_strings get_first_player_str(game_state).ljust(TITLE_WIDTH)
-  display_strings STRINGS['menu_quit'].ljust(TITLE_WIDTH)
+  display_strings generate_menu_strings(game_state)
 end
 
 def choose_first_player(game_state)
@@ -280,7 +290,7 @@ def make_computer_mark(game_state)
   game_state[:board][mark] = COMPUTER_MARK
 end
 
-def normal_ai_mark board
+def normal_ai_mark(board)
   offensive = find_possible_win(board, COMPUTER_MARK)
   defensive = find_possible_win(board, USER_MARK)
 
@@ -292,7 +302,7 @@ def normal_ai_mark board
   empty.sample
 end
 
-def random_ai_mark board
+def random_ai_mark(board)
   empty = get_empty_marks board
   empty.sample
 end
@@ -317,15 +327,13 @@ def find_possible_win(board, mark)
   combos = find_all_marking_combos(BOARD_SIZE - 1, marks)
 
   # product with empty marks, so that empty marks are the first in the sub array
-  possible_wins = empty.product(combos).map { |sub| sub.flatten }
+  possible_wins = empty.product(combos).map(&:flatten)
 
   # Filter wins
   possible_wins.select! { |combo| combo_wins? combo }
 
   if possible_wins.size > 0
     convert_magic_square_to_square possible_wins.sample[0]
-  else
-    nil
   end
 end
 
@@ -346,11 +354,10 @@ def change_difficulty(game_state)
 end
 
 def change_first_player(game_state)
-  case
-  when game_state[:random]
+  if game_state[:random]
     game_state[:random] = false
     game_state[:user_first] = true
-  when game_state[:user_first]
+  elsif game_state[:user_first]
     game_state[:user_first] = false
   else
     game_state[:random] = true
@@ -373,6 +380,15 @@ def wait_for_keypress
   nil
 end
 
+def generate_menu_strings(game_state)
+  menu_strings = []
+  menu_strings << STRINGS['menu_play_game'].ljust(TITLE_WIDTH)
+  menu_strings << get_match_len_str(game_state[:match_len]).ljust(TITLE_WIDTH)
+  menu_strings << get_difficulty_str(game_state[:difficulty]).ljust(TITLE_WIDTH)
+  menu_strings << get_first_player_str(game_state).ljust(TITLE_WIDTH)
+  menu_strings << STRINGS['menu_quit'].ljust(TITLE_WIDTH)
+end
+
 def get_match_len_str(length)
   best_of = format(STRINGS['best_of'], length)
   format(STRINGS['menu_match_len'], best_of)
@@ -383,10 +399,12 @@ def get_difficulty_str(index)
 end
 
 def get_first_player_str(game_state)
-  player = case
-           when game_state[:random]     then 'Coin Flip'
-           when game_state[:user_first] then 'You'
-           else                              'Computer'
+  player = if game_state[:random]
+             'Coin Flip'
+           elsif game_state[:user_first]
+             'You'
+           else
+             'Computer'
            end
   format(STRINGS['menu_first'], player)
 end
@@ -444,7 +462,7 @@ def find_all_marking_combos(marks_in_line, marks)
   until position > marks.size - marks_in_line
     first = [marks[position]]
     rest = find_all_marking_combos(marks_in_line - 1, marks[(position + 1)..-1])
-    out += first.product(rest).map { |sub| sub.flatten }
+    out += first.product(rest).map(&:flatten)
 
     position += 1
   end
