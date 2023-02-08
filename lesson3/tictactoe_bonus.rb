@@ -74,7 +74,7 @@ YES_NO = ['y', 'n']
 ANIMATION_TIME = 0.1
 BOARD_SIZE = 3
 
-# Invoked on line 464
+# Invoked on line 491
 def program_loop
   game_state = { match_len: 1, difficulty: 1, user_first: true, random: true }
 
