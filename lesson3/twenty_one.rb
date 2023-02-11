@@ -2,6 +2,8 @@ require 'io/console'
 
 FACE_VALUES = %w(A 2 3 4 5 6 7 8 9 10 J Q K)
 SUITS = %w(♠ ♣ ♥ ♦)
+MAX_TOTAL = 21
+AI_LIMIT = 17
 
 def initialize_deck
   FACE_VALUES.product(SUITS)
@@ -16,7 +18,7 @@ def update_total!(game_state, hand_symbol, card)
 
   game_state[total_symbol] += get_card_value(card)
 
-  if game_state[total_symbol] > 21
+  if game_state[total_symbol] > MAX_TOTAL
     game_state[total_symbol] = evaluate_hand(game_state[hand_symbol])
   end
 
@@ -56,7 +58,7 @@ def get_hand_string(hand, hidden = 0)
 end
 
 def bust?(game_state, hand_symbol)
-  game_state[get_total_symbol(hand_symbol)] > 21
+  game_state[get_total_symbol(hand_symbol)] > MAX_TOTAL
 end
 
 def get_card_value(card)
@@ -76,7 +78,7 @@ def evaluate_hand(hand)
 
   return sum if ace_count == 0
   sum += 10 + ace_count
-  sum -= 10 if sum > 21
+  sum -= 10 if sum > MAX_TOTAL
   sum
 end
 
@@ -153,7 +155,7 @@ loop do
 
   loop do
     display_game_state(game_state)
-    break if game_state[:dealer_total] >= 17
+    break if game_state[:dealer_total] >= AI_LIMIT
 
     puts "Dealer hits!"
     deal_card!(game_state, :dealer_hand)
