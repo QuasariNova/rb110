@@ -7,16 +7,38 @@ def initialize_deck
   FACE_VALUES.product(SUITS)
 end
 
-def deal_card!(deck, hand, count = 1)
-  count.times { hand << deck.delete(deck.sample) }
+def get_total_symbol(hand_symbol)
+  hand_symbol == :player_hand ? :player_total : :dealer_total
 end
 
-def display_game_state(hands, hide_dealer: true)
+def update_total!(game_state, hand_symbol, card)
+  total_symbol = get_total_symbol(hand_symbol)
+
+  game_state[total_symbol] += get_card_value(card)
+
+  if game_state[total_symbol] > 21
+    game_state[total_symbol] = evaluate_hand(game_state[hand_symbol])
+  end
+
+  nil
+end
+
+def deal_card!(game_state, hand_symbol, count = 1)
+  count.times do
+    card = game_state[:deck].delete(game_state[:deck].sample)
+    game_state[hand_symbol] << card
+    update_total!(game_state, hand_symbol, card)
+  end
+
+  nil
+end
+
+def display_game_state(game_state, hide_dealer: true)
   hidden = hide_dealer ? 1 : 0
   $stdout.clear_screen
 
-  puts("Dealer has: #{get_hand_string(hands[:dealer_hand], hidden)}")
-  puts("You have: #{get_hand_string(hands[:player_hand])}")
+  puts("Dealer has: #{get_hand_string(game_state[:dealer_hand], hidden)}")
+  puts("You have: #{get_hand_string(game_state[:player_hand])}")
 end
 
 def get_hand_string(hand, hidden = 0)
@@ -33,8 +55,8 @@ def get_hand_string(hand, hidden = 0)
   cards.join(separator)
 end
 
-def bust?(hand)
-  evaluate_hand(hand) > 21
+def bust?(game_state, hand_symbol)
+  game_state[get_total_symbol(hand_symbol)] > 21
 end
 
 def get_card_value(card)
@@ -58,9 +80,9 @@ def evaluate_hand(hand)
   sum
 end
 
-def calculate_winner(hands)
-  player = evaluate_hand(hands[:player_hand])
-  dealer = evaluate_hand(hands[:dealer_hand])
+def calculate_winner(game_state)
+  player = game_state[:player_total]
+  dealer = game_state[:dealer_total]
   return :draw if player == dealer
   return :player if player > dealer
   :dealer
@@ -82,7 +104,7 @@ def play_again?
     answer = gets.chomp.downcase
     yes = "yes".start_with?(answer)
     return yes if yes || "no".start_with?(answer)
-    puts "Invalid, input yes or no"
+    puts "Invalid, please input yes or no"
   end
 end
 
@@ -90,52 +112,58 @@ puts "Welcome to Twenty-One!"
 sleep(2)
 
 loop do
-  deck = initialize_deck
+  game_state = {
+    player_hand: [], dealer_hand: [], player_total: 0, dealer_total: 0,
+    deck: initialize_deck
+  }
 
-  hands = {player_hand: [], dealer_hand: []}
-  deal_card!(deck, hands[:player_hand], 2)
-  deal_card!(deck, hands[:dealer_hand], 2)
+  deal_card!(game_state, :player_hand, 2)
+  deal_card!(game_state, :dealer_hand, 2)
+
+  is_hit = true
 
   loop do
-    display_game_state(hands)
+    display_game_state(game_state)
 
-    puts("hit or stay?")
+    puts "Please input either hit or stay." if !is_hit
+
+    puts("You have a total of #{game_state[:player_total]}")
+    puts("Hit or Stay?")
     print("=> ")
 
     answer = gets.chomp.downcase
 
-    if 'hit'.start_with?(answer)
-      deal_card!(deck, hands[:player_hand])
-      puts "You hit!"
-    end
+    is_hit = 'hit'.start_with?(answer)
 
-    break if 'stay'.start_with?(answer) or bust?(hands[:player_hand])
+    deal_card!(game_state, :player_hand) if is_hit
+
+    break if 'stay'.start_with?(answer) or bust?(game_state, :player_hand)
   end
 
-  display_game_state(hands)
+  display_game_state(game_state)
 
-  if bust?(hands[:player_hand])
+  if bust?(game_state, :player_hand)
     puts "You busted. Dealer wins!"
     next if play_again?
     break
   end
 
   puts "You stay."
+  sleep(1)
 
   loop do
-    display_game_state(hands)
-    hand_value = evaluate_hand(hands[:dealer_hand])
-    break if hand_value >= 17
+    display_game_state(game_state)
+    break if game_state[:dealer_total] >= 17
 
     puts "Dealer hits!"
-    deal_card!(deck, hands[:dealer_hand])
+    deal_card!(game_state, :dealer_hand)
 
-    sleep(2)
+    sleep(1)
   end
 
-  display_game_state(hands, hide_dealer: false)
+  display_game_state(game_state)
 
-  if bust?(hands[:dealer_hand])
+  if bust?(game_state, :dealer_hand)
     puts "Dealer busts! You win!"
     next if play_again?
     break
@@ -144,8 +172,10 @@ loop do
     sleep(2)
   end
 
-  display_game_state(hands, hide_dealer:false)
-  display_winner(calculate_winner(hands))
+  display_game_state(game_state, hide_dealer:false)
+  puts("You have a total of #{game_state[:player_total]}")
+  puts("The dealer has a total of #{game_state[:dealer_total]}")
+  display_winner(calculate_winner(game_state))
   break unless play_again?
 end
 
