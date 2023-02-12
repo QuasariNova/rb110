@@ -4,17 +4,33 @@ FACE_VALUES = %w(A 2 3 4 5 6 7 8 9 10 J Q K)
 SUITS = %w(♠ ♣ ♥ ♦)
 MAX_TOTAL = 21
 AI_LIMIT = 17
+ROUND_RESULTS = {
+  draw: "It is a draw.", player: "You win the round!",
+  dealer: "Dealer wins the round!", player_bust: "You busted! Dealer wins!",
+  dealer_bust: "Dealer busted! You win!"
+}
+STATE_SYMBOLS = {
+  player: {hand: :player_hand, total: :player_total, score: :player_score },
+  dealer: {hand: :dealer_hand, total: :dealer_total, score: :dealer_score }
+}
 
-def initialize_deck
-  FACE_VALUES.product(SUITS)
+def prepare_round!(game_state)
+  game_state[:deck] = FACE_VALUES.product(SUITS)
+
+  game_state[:player_hand] = []
+  game_state[:player_total] = 0
+
+  game_state[:dealer_hand] = []
+  game_state[:dealer_total] = 0
 end
 
-def get_total_symbol(hand_symbol)
-  hand_symbol == :player_hand ? :player_total : :dealer_total
+def initialize_game_state
+  { player_score: 0, dealer_score: 0 }
 end
 
-def update_total!(game_state, hand_symbol, card)
-  total_symbol = get_total_symbol(hand_symbol)
+def update_total!(game_state, player, card)
+  total_symbol = STATE_SYMBOLS[player][:total]
+  hand_symbol = STATE_SYMBOLS[player][:hand]
 
   game_state[total_symbol] += get_card_value(card)
 
@@ -25,11 +41,11 @@ def update_total!(game_state, hand_symbol, card)
   nil
 end
 
-def deal_card!(game_state, hand_symbol, count = 1)
+def deal_card!(game_state, player, count = 1)
   count.times do
     card = game_state[:deck].delete(game_state[:deck].sample)
-    game_state[hand_symbol] << card
-    update_total!(game_state, hand_symbol, card)
+    game_state[STATE_SYMBOLS[player][:hand]] << card
+    update_total!(game_state, player, card)
   end
 
   nil
@@ -60,14 +76,14 @@ def get_hand_string(hand, hidden = 0)
   cards.join(separator)
 end
 
-def bust?(game_state, hand_symbol)
-  game_state[get_total_symbol(hand_symbol)] > MAX_TOTAL
+def bust?(game_state, player)
+  game_state[STATE_SYMBOLS[player][:total]] > MAX_TOTAL
 end
 
 def get_card_value(card)
   case card[0]
   when 'J', 'Q', 'K' then 10
-  when 'A' then 11 # This should never happen, since I split out aces
+  when 'A' then 11
   else card[0].to_i
   end
 end
@@ -88,26 +104,16 @@ end
 def calculate_winner(game_state)
   player = game_state[:player_total]
   dealer = game_state[:dealer_total]
+  return :player_bust if bust?(game_state, :player)
+  return :dealer_bust if bust?(game_state, :dealer)
   return :draw if player == dealer
   return :player if player > dealer
   :dealer
 end
 
-# rubocop:disable Style/HashLikeCase
-def get_winner_str(winner)
-  case winner
-  when :draw then "It is a draw."
-  when :player then "You win!"
-  when :dealer then "Dealer wins!"
-  when :player_bust then "You busted! Dealer wins!"
-  when :dealer_bust then "Dealer busted! You win!"
-  end
-end
-# rubocop:enable Style/HashLikeCase
-
-def display_winner(game_state, winner)
+def display_round_winner(game_state, winner)
   display_game_state(game_state, hide_dealer: false)
-  puts get_winner_str(winner)
+  puts ROUND_RESULTS[winner]
   sleep(2)
 end
 
@@ -123,18 +129,23 @@ def play_again?
   end
 end
 
-puts "Welcome to Twenty-One!"
-sleep(2)
+def dealer_turn!(game_state)
+  loop do
+    display_game_state(game_state, hide_player: true)
+    break if game_state[:dealer_total] >= AI_LIMIT
 
-loop do
-  game_state = {
-    player_hand: [], dealer_hand: [], player_total: 0, dealer_total: 0,
-    deck: initialize_deck
-  }
+    puts "Dealer hits!"
+    deal_card!(game_state, :dealer)
 
-  deal_card!(game_state, :player_hand, 2)
-  deal_card!(game_state, :dealer_hand, 2)
+    sleep(1)
+  end
+  unless bust?(game_state, :dealer)
+    puts "Dealer stayed."
+    sleep 2
+  end
+end
 
+def player_turn!(game_state)
   is_hit = true
 
   loop do
@@ -149,44 +160,33 @@ loop do
 
     is_hit = 'hit'.start_with?(answer)
 
-    deal_card!(game_state, :player_hand) if is_hit
+    deal_card!(game_state, :player) if is_hit
 
-    break if 'stay'.start_with?(answer) || bust?(game_state, :player_hand)
+    break if 'stay'.start_with?(answer) || bust?(game_state, :player)
   end
+end
 
-  display_game_state(game_state)
+def play_round!(game_state)
+  prepare_round!(game_state)
 
-  if bust?(game_state, :player_hand)
-    display_winner(game_state, :player_bust)
-    next if play_again?
-    break
-  end
+  deal_card!(game_state, :player, 2)
+  deal_card!(game_state, :dealer, 2)
 
-  puts "You stay."
-  sleep(1)
+  player_turn!(game_state)
 
-  loop do
-    display_game_state(game_state, hide_player: true)
-    break if game_state[:dealer_total] >= AI_LIMIT
+  dealer_turn!(game_state) unless bust?(game_state, :player)
 
-    puts "Dealer hits!"
-    deal_card!(game_state, :dealer_hand)
+  display_round_winner(game_state, calculate_winner(game_state))
+end
 
-    sleep(1)
-  end
+puts "Welcome to Twenty-One!"
+sleep(2)
 
-  display_game_state(game_state, hide_player: true)
+loop do
+  game_state = initialize_game_state
 
-  if bust?(game_state, :dealer_hand)
-    display_winner(game_state, :dealer_bust)
-    next if play_again?
-    break
-  else
-    puts "Dealer stayed."
-    sleep(2)
-  end
+  play_round!(game_state)
 
-  display_winner(game_state, calculate_winner(game_state))
   break unless play_again?
 end
 
