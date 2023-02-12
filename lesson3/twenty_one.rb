@@ -35,7 +35,7 @@ def deal_card!(game_state, hand_symbol, count = 1)
   nil
 end
 
-def display_game_state(game_state, hide_dealer: true, hide_player:false)
+def display_game_state(game_state, hide_dealer: true, hide_player: false)
   hidden = hide_dealer ? 1 : 0
   $stdout.clear_screen
 
@@ -93,6 +93,7 @@ def calculate_winner(game_state)
   :dealer
 end
 
+# rubocop:disable Style/HashLikeCase
 def get_winner_str(winner)
   case winner
   when :draw then "It is a draw."
@@ -102,9 +103,10 @@ def get_winner_str(winner)
   when :dealer_bust then "Dealer busted! You win!"
   end
 end
+# rubocop:enable Style/HashLikeCase
 
 def display_winner(game_state, winner)
-  display_game_state(game_state, hide_dealer:false)
+  display_game_state(game_state, hide_dealer: false)
   puts get_winner_str(winner)
   sleep(2)
 end
@@ -149,7 +151,7 @@ loop do
 
     deal_card!(game_state, :player_hand) if is_hit
 
-    break if 'stay'.start_with?(answer) or bust?(game_state, :player_hand)
+    break if 'stay'.start_with?(answer) || bust?(game_state, :player_hand)
   end
 
   display_game_state(game_state)
