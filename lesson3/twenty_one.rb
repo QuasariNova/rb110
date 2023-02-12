@@ -1,18 +1,18 @@
 require 'io/console'
 
-FACE_VALUES = %w(A 2 3 4 5 6 7 8 9 10 J Q K)
-SUITS = %w(♠ ♣ ♥ ♦)
+FACE_VALUES = %w(A 2 3 4 5 6 7 8 9 10 J Q K).freeze
+SUITS = %w(♠ ♣ ♥ ♦).freeze
 MAX_TOTAL = 21
 AI_LIMIT = 17
 ROUND_RESULTS = {
-  draw: "It is a draw.", player: "You win the round!",
-  dealer: "Dealer wins the round!", player_bust: "You busted! Dealer wins!",
-  dealer_bust: "Dealer busted! You win!"
-}
+  draw: 'It is a draw.', player: 'You win the round!',
+  dealer: 'Dealer wins the round!', player_bust: 'You busted! Dealer wins!',
+  dealer_bust: 'Dealer busted! You win!'
+}.freeze
 STATE_SYMBOLS = {
-  player: {hand: :player_hand, total: :player_total, score: :player_score },
-  dealer: {hand: :dealer_hand, total: :dealer_total, score: :dealer_score }
-}
+  player: { hand: :player_hand, total: :player_total, score: :player_score },
+  dealer: { hand: :dealer_hand, total: :dealer_total, score: :dealer_score }
+}.freeze
 
 def prepare_round!(game_state)
   game_state[:deck] = FACE_VALUES.product(SUITS)
@@ -26,6 +26,12 @@ end
 
 def initialize_game_state
   { player_score: 0, dealer_score: 0 }
+end
+
+def prompt
+  print('=> ')
+
+  gets.chomp.downcase
 end
 
 def update_total!(game_state, player, card)
@@ -58,8 +64,8 @@ def display_game_state(game_state, hide_dealer: true, hide_player: false)
   puts("Dealer has: #{get_hand_string(game_state[:dealer_hand], hidden)}")
   puts("You have: #{get_hand_string(game_state[:player_hand])}")
   puts(nil)
-  puts("You have a total of #{game_state[:player_total]}") if !hide_player
-  puts("The dealer has a total of #{game_state[:dealer_total]}") if !hide_dealer
+  puts("Your total is #{game_state[:player_total]}") unless hide_player
+  puts("The dealer's total is #{game_state[:dealer_total]}") unless hide_dealer
 end
 
 def get_hand_string(hand, hidden = 0)
@@ -95,7 +101,8 @@ def evaluate_hand(hand)
   card_groups[0].map! { |card| get_card_value(card) }
   sum = card_groups[0].sum
 
-  return sum if ace_count == 0
+  return sum if ace_count.zero?
+
   sum += 10 + ace_count
   sum -= 10 if sum > MAX_TOTAL
   sum
@@ -105,9 +112,13 @@ def calculate_winner(game_state)
   player = game_state[:player_total]
   dealer = game_state[:dealer_total]
   return :player_bust if bust?(game_state, :player)
+
   return :dealer_bust if bust?(game_state, :dealer)
+
   return :draw if player == dealer
+
   return :player if player > dealer
+
   :dealer
 end
 
@@ -119,13 +130,14 @@ end
 
 def play_again?
   puts nil
-  puts "Do you want to play again? (yes or no)"
+  puts 'Do you want to play again? (yes or no)'
+
   loop do
-    print "=> "
-    answer = gets.chomp.downcase
-    yes = "yes".start_with?(answer)
-    return yes if yes || "no".start_with?(answer)
-    puts "Invalid, please input yes or no"
+    answer = prompt
+    yes = 'yes'.start_with?(answer)
+    return yes if yes || 'no'.start_with?(answer)
+
+    puts 'Invalid, please input yes or no'
   end
 end
 
@@ -134,15 +146,15 @@ def dealer_turn!(game_state)
     display_game_state(game_state, hide_player: true)
     break if game_state[:dealer_total] >= AI_LIMIT
 
-    puts "Dealer hits!"
+    puts 'Dealer hits!'
     deal_card!(game_state, :dealer)
 
     sleep(1)
   end
-  unless bust?(game_state, :dealer)
-    puts "Dealer stayed."
-    sleep 2
-  end
+  return if bust?(game_state, :dealer)
+
+  puts 'Dealer stayed.'
+  sleep 2
 end
 
 def player_turn!(game_state)
@@ -151,12 +163,10 @@ def player_turn!(game_state)
   loop do
     display_game_state(game_state)
 
-    puts "Please input either hit or stay." if !is_hit
+    puts 'Please input either hit or stay.' if !is_hit
 
-    puts("Hit or Stay?")
-    print("=> ")
-
-    answer = gets.chomp.downcase
+    puts('Hit or Stay?')
+    answer = prompt
 
     is_hit = 'hit'.start_with?(answer)
 
@@ -179,7 +189,7 @@ def play_round!(game_state)
   display_round_winner(game_state, calculate_winner(game_state))
 end
 
-puts "Welcome to Twenty-One!"
+puts 'Welcome to Twenty-One!'
 sleep(2)
 
 loop do
@@ -190,4 +200,4 @@ loop do
   break unless play_again?
 end
 
-puts "Thank you for playing!"
+puts 'Thank you for playing!'
