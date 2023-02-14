@@ -193,7 +193,7 @@ def dealer_turn!(game_state)
   return if bust?(game_state, :dealer)
 
   puts('Dealer stayed.')
-  sleep 2
+  sleep(2)
 end
 
 def player_turn!(game_state)
